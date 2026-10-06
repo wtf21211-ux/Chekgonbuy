@@ -23,19 +23,21 @@ def fetch_product_data(product_name: str) -> dict:
     
     try:
         with DDGS() as ddgs:
-            price_results = ddgs.text(f"{product_name} ราคา สเปก", region="th-th", max_results=3)
+            # ค้นหาราคาและสเปก
+            price_results = list(ddgs.text(f"{product_name} ราคา สเปก", region="th-th", max_results=3))
             for r in price_results:
-                price_info.append(f"- {r.get('title')}: {r.get('body')}")
+                price_info.append(f"- {r.get('title', '')}: {r.get('body', '')}")
                 
-            review_results = ddgs.text(f"{product_name} รีวิว ข้อเสีย ปัญหา site:pantip.com OR site:facebook.com OR site:x.com", region="th-th", max_results=4)
+            # ค้นหารีวิว
+            review_results = list(ddgs.text(f"{product_name} รีวิว ข้อเสีย ปัญหา", region="th-th", max_results=3))
             for r in review_results:
-                review_info.append(f"- {r.get('title')}: {r.get('body')}")
+                review_info.append(f"- {r.get('title', '')}: {r.get('body', '')}")
     except Exception as e:
-        print(f"[Search Error]: {e}")
+        print(f"[Search Warning]: {e}")
 
     return {
-        "prices": "\n".join(price_info) if price_info else "ไม่พบข้อมูลราคาแน่ชัด",
-        "reviews": "\n".join(review_info) if review_info else "ไม่พบรีวิวหรือปัญหาแน่ชัด"
+        "prices": "\n".join(price_info) if price_info else "ไม่สามารถดึงข้อมูลสดจากเว็บได้ ให้ใช้วิเคราะห์จากฐานข้อมูลของคุณ",
+        "reviews": "\n".join(review_info) if review_info else "ไม่สามารถดึงรีวิวสดจากเว็บได้ ให้ใช้วิเคราะห์จากฐานข้อมูลของคุณ"
     }
 
 class SearchRequest(BaseModel):
@@ -54,15 +56,15 @@ async def search_product(req: SearchRequest):
     raw_data = fetch_product_data(req.product_name)
     
     prompt = f"""
-    คุณคือผู้เชี่ยวชาญด้านการวิเคราะห์สินค้า จงนำข้อมูลดิบของ "{req.product_name}" ต่อไปนี้มาวิเคราะห์และสรุปให้อยู่ในรูปแบบ JSON เท่านั้น:
+    คุณคือผู้เชี่ยวชาญด้านการวิเคราะห์สินค้า จงนำข้อมูลของ "{req.product_name}" ต่อไปนี้มาวิเคราะห์และสรุปให้อยู่ในรูปแบบ JSON เท่านั้น:
     
-    [ข้อมูลราคาและสเปก]:
+    [ข้อมูลราคาและสเปกดิบ]:
     {raw_data['prices']}
     
-    [ข้อมูลรีวิวและกระแสโซเชียล]:
+    [ข้อมูลรีวิวและกระแสโซเชียลดิบ]:
     {raw_data['reviews']}
     
-    ตอบกลับเฉพาะ JSON โครงสร้างนี้เท่านั้น (ห้ามมีคำเกริ่นหรือข้อความอื่นปน):
+    ตอบกลับเฉพาะ JSON โครงสร้างนี้เท่านั้น (ห้ามมีคำเกริ่นหรือข้อความ markdown เช่น ```json ปนเด็ดขาด):
     {{
         "price_summary": "สรุปช่วงราคาล่าสุด (เช่น 35,900 - 42,000 บาท)",
         "specs_and_details": [
@@ -79,15 +81,18 @@ async def search_product(req: SearchRequest):
     """
 
     try:
-        # ใช้โมเดล Qwen 2.5
+        # เปลี่ยนเป็นโมเดล Llama 3.3 70B ที่เสถียรที่สุดของ Groq
         response = client.chat.completions.create(
-            model="qwen-2.5-32b",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
 
-        return json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        return json.loads(content)
 
     except Exception as e:
         print(f"Error generation: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch product insights")
+        # ส่งข้อความ Error ที่แท้จริงออกมาเพื่อให้เช็กง่ายขึ้น
+        raise HTTPException(status_code=500, detail=f"Groq API Error: {str(e)}")
+    
