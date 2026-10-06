@@ -149,7 +149,8 @@
             result.classList.add('hidden');
 
             try {
-                const res = await fetch('/api/search', {
+                // ยิง API ไปหาหลังบ้านบน Vercel (ใส่ URL Vercel ของคุณนำหน้า /api/search)
+                const res = await fetch('https://chekgonbuy.vercel.app/api/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ product_name: query })
@@ -195,5 +196,3 @@
     </script>
 </body>
 </html>
-
-
