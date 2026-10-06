@@ -1,11 +1,21 @@
 import os
 import json
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from groq import Groq
 from duckduckgo_search import DDGS
 
 app = FastAPI()
+
+# เปิดอนุญาต CORS ให้ GitHub Pages ยิงข้ามโดเมนเข้ามาดึงข้อมูลได้
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def fetch_product_data(product_name: str) -> dict:
     price_info = []
@@ -69,6 +79,7 @@ async def search_product(req: SearchRequest):
     """
 
     try:
+        # ใช้โมเดล Qwen 2.5
         response = client.chat.completions.create(
             model="qwen-2.5-32b",
             messages=[{"role": "user", "content": prompt}],
