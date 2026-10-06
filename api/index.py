@@ -72,7 +72,7 @@ async def search_product(req: SearchRequest):
         """
 
         response = client.chat.completions.create(
-            model="qwen-2.5-32b",
+            model="openai/gpt-oss-20b",
             messages=[
                 {"role": "system", "content": "You are a JSON generator. Output strictly valid JSON."},
                 {"role": "user", "content": prompt}
