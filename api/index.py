@@ -72,7 +72,7 @@ async def search_product(req: SearchRequest):
         """
 
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen-2.5-32b",
             messages=[
                 {"role": "system", "content": "You are a JSON generator. Output strictly valid JSON."},
                 {"role": "user", "content": prompt}
