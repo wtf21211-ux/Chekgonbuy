@@ -1,12 +1,24 @@
 import os
 import json
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from groq import Groq
 from duckduckgo_search import DDGS
 
 app = FastAPI()
 
+# ---------------------------------------------------------
+# 1. หน้าแรกส่งไฟล์ index.html จากโฟลเดอร์ public
+# ---------------------------------------------------------
+@app.get("/")
+async def read_index():
+    # Vercel รันไฟล์จาก root directory
+    return FileResponse("public/index.html")
+
+# ---------------------------------------------------------
+# 2. ระบบ ค้นหาข้อมูล DuckDuckGo
+# ---------------------------------------------------------
 def fetch_product_data(product_name: str) -> dict:
     price_info = []
     review_info = []
@@ -31,6 +43,9 @@ def fetch_product_data(product_name: str) -> dict:
 class SearchRequest(BaseModel):
     product_name: str
 
+# ---------------------------------------------------------
+# 3. API ค้นหาสินค้าประมวลผลด้วย Qwen ผ่าน Groq
+# ---------------------------------------------------------
 @app.post("/api/search")
 async def search_product(req: SearchRequest):
     if not req.product_name.strip():
@@ -69,7 +84,6 @@ async def search_product(req: SearchRequest):
     """
 
     try:
-        # ใช้โมเดล Qwen 2.5 บน Groq
         response = client.chat.completions.create(
             model="qwen-2.5-32b",
             messages=[{"role": "user", "content": prompt}],
