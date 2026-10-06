@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Insights AI</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Kanit', 'Plus Jakarta Sans', sans-serif;
+            background-color: #F8F6F0; /* Soft Warm Background */
+            color: #2D3748;
+        }
+        
+        .soft-card {
+            background-color: #FFFFFF;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 20px -2px rgba(200, 190, 175, 0.15);
+        }
+
+        .soft-input {
+            background-color: #FFFFFF;
+            border: 1.5px solid #E2E8F0;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .soft-input:focus {
+            border-color: #7C3AED;
+            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.08);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 antialiased">
+
+    <!-- Container หลัก -->
+    <main class="w-full max-w-xl mx-auto my-10 sm:my-16">
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EFECE6] text-neutral-600 text-xs font-medium mb-4">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span class="text-neutral-700 font-medium">Product Intelligence AI</span>
+            </div>
+            
+            <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight text-neutral-800 mb-2">
+                ค้นหาสินค้า
+            </h1>
+            <p class="text-neutral-500 text-sm font-light">
+                สรุปราคา สเปก และกระแสดราม่าจริงจากโซเชียลในที่เดียว
+            </p>
+        </header>
+
+        <!-- Search Box -->
+        <section class="relative mb-8">
+            <div class="relative flex items-center">
+                <input type="text" id="searchInput" 
+                       placeholder="พิมพ์ชื่อสินค้า เช่น iPhone 15 Pro, Zata skin..." 
+                       class="w-full pl-5 pr-28 py-4 rounded-2xl soft-input text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none"
+                       onkeypress="if(event.key === 'Enter') searchProduct()">
+                <button onclick="searchProduct()" 
+                        class="absolute right-2.5 px-5 py-2.5 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-xs font-medium transition-all duration-150 active:scale-95 shadow-sm">
+                    ค้นหา
+                </button>
+            </div>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden py-12 text-center fade-in">
+            <div class="inline-block w-7 h-7 border-2 border-neutral-300 border-t-neutral-700 rounded-full animate-spin mb-3"></div>
+            <p class="text-xs text-neutral-500 font-light">กำลังเรียบเรียงข้อมูลอย่างพิถีพิถัน...</p>
+        </div>
+
+        <!-- Result Dashboard -->
+        <div id="result" class="space-y-4 hidden">
+            
+            <!-- Price Card -->
+            <div class="p-6 rounded-2xl soft-card fade-in">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-medium uppercase tracking-wider text-neutral-400">ช่วงราคาล่าสุด</span>
+                    <span class="px-2.5 py-0.5 text-[10px] bg-emerald-50 text-emerald-700 rounded-full font-medium">ราคาประเมิน</span>
+                </div>
+                <p id="price" class="text-2xl sm:text-3xl font-semibold text-neutral-800 tracking-tight">-</p>
+            </div>
+
+            <!-- Specs Card -->
+            <div class="p-6 rounded-2xl soft-card fade-in">
+                <span class="text-xs font-medium uppercase tracking-wider text-neutral-400 block mb-3">สเปก & จุดเด่นสำคัญ</span>
+                <ul id="specs" class="space-y-2.5 text-sm text-neutral-700 font-light"></ul>
+            </div>
+
+            <!-- Reviews Card -->
+            <div class="p-6 rounded-2xl soft-card fade-in">
+                <span class="text-xs font-medium uppercase tracking-wider text-neutral-400 block mb-4">สรุปความคิดเห็นจากผู้ใช้</span>
+                
+                <div class="space-y-4">
+                    <div>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-medium mb-2.5">
+                            👍 ข้อดี
+                        </span>
+                        <div id="positiveReviews" class="flex flex-wrap gap-2 text-xs"></div>
+                    </div>
+                    
+                    <div class="pt-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 text-xs font-medium mb-2.5">
+                            👎 ข้อเสีย / จุดสังเกต
+                        </span>
+                        <div id="negativeReviews" class="flex flex-wrap gap-2 text-xs"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drama & Trends Card -->
+            <div class="p-6 rounded-2xl soft-card fade-in">
+                <div class="flex items-center gap-2 mb-2.5">
+                    <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                    <span class="text-xs font-medium uppercase tracking-wider text-neutral-400">กระแสดราม่า & ข้อควรระวัง</span>
+                </div>
+                <p id="drama" class="text-sm text-neutral-700 font-light leading-relaxed">-</p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <script>
+        async function searchProduct() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_name: query })
+                });
+
+                if (!res.ok) throw new Error('Server response failed');
+
+                const data = await res.json();
+
+                // Render Price
+                document.getElementById('price').innerText = data.price_summary || 'ไม่พบข้อมูลราคา';
+                
+                // Render Specs
+                const specsList = document.getElementById('specs');
+                specsList.innerHTML = (data.specs_and_details || [])
+                    .map(s => `<li class="flex items-start gap-2.5"><span class="text-neutral-400 mt-0.5">•</span><span>${s}</span></li>`)
+                    .join('');
+
+                // Render Positive Reviews
+                const posContainer = document.getElementById('positiveReviews');
+                const posList = data.community_reviews?.positive || [];
+                posContainer.innerHTML = posList.length 
+                    ? posList.map(item => `<span class="px-3 py-1.5 bg-emerald-50/80 text-emerald-900 rounded-xl border border-emerald-100">${item}</span>`).join('')
+                    : '<span class="text-neutral-400 font-light">-</span>';
+
+                // Render Negative Reviews
+                const negContainer = document.getElementById('negativeReviews');
+                const negList = data.community_reviews?.negative || [];
+                negContainer.innerHTML = negList.length 
+                    ? negList.map(item => `<span class="px-3 py-1.5 bg-amber-50/80 text-amber-900 rounded-xl border border-amber-100">${item}</span>`).join('')
+                    : '<span class="text-neutral-400 font-light">-</span>';
+
+                // Render Drama
+                document.getElementById('drama').innerText = data.drama_and_trends || 'ไม่มีกระแสรุนแรง';
+
+                loading.classList.add('hidden');
+                result.classList.remove('hidden');
+            } catch (err) {
+                alert('เกิดข้อผิดพลาดในการดึงข้อมูล โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง');
+                loading.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
