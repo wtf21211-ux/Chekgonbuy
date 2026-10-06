@@ -149,14 +149,17 @@
             result.classList.add('hidden');
 
             try {
-                // ยิง API ไปหาหลังบ้านบน Vercel (ใส่ URL Vercel ของคุณนำหน้า /api/search)
-                const res = await fetch('chekgonbuy-r333.vercel.app', {
+                // ✅ แก้ไข URL ให้ระบุ https:// และชี้ไปที่ /api/search อย่างถูกต้อง
+                const res = await fetch('https://chekgonbuy-r333.vercel.app/api/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ product_name: query })
                 });
 
-                if (!res.ok) throw new Error('Server response failed');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server status: ${res.status}`);
+                }
 
                 const data = await res.json();
 
@@ -189,7 +192,7 @@
                 loading.classList.add('hidden');
                 result.classList.remove('hidden');
             } catch (err) {
-                alert('เกิดข้อผิดพลาดในการดึงข้อมูล โปรดตรวจสอบ API Key หรือลองใหม่อีกครั้ง');
+                alert('เกิดข้อผิดพลาด: ' + err.message);
                 loading.classList.add('hidden');
             }
         }
